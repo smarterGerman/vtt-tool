@@ -487,6 +487,75 @@
         const transcriptInput = document.getElementById('transcriptInput');
         const loadTranscriptBtn = document.getElementById('loadTranscriptBtn');
 
+        // Move this function to BEFORE the event listeners section (around line 480, before the fileUpload.addEventListener lines)
+
+function exportVTT() {
+    if (timestamps.length === 0) {
+        alert('No timestamps to export. Please mark some timestamps first.');
+        return;
+    }
+
+    const formatVTTTime = (time) => {
+        const hours = Math.floor(time / 3600);
+        const minutes = Math.floor((time % 3600) / 60);
+        const seconds = time % 60;
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toFixed(3).padStart(6, '0')}`;
+    };
+
+    let vttContent = 'WEBVTT\n\n';
+    
+    timestamps.forEach((timestamp, index) => {
+        const startTime = formatVTTTime(timestamp.start || 0);
+        const endTime = formatVTTTime(timestamp.end || 0);
+        const text = timestamp.text || `Sentence ${index + 1}`;
+        
+        vttContent += `${index + 1}\n`;
+        vttContent += `${startTime} --> ${endTime}\n`;
+        vttContent += `${text}\n\n`;
+    });
+
+    // Create and download file
+    const blob = new Blob([vttContent], { type: 'text/vtt' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'subtitles.vtt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    console.log('VTT file exported successfully');
+}
+
+// Also add the missing clearAll function here
+function clearAll() {
+    if (timestamps.length === 0) return;
+    
+    if (confirm('Are you sure you want to clear all timestamps? This action cannot be undone.')) {
+        timestamps = [];
+        transcriptSentences = [];
+        currentSentenceIndex = 0;
+        
+        // Reset UI
+        updateTimestampsList();
+        updateExportButton();
+        markBtn.disabled = false;
+        markBtn.textContent = 'Mark Timestamp';
+        
+        // Clear transcript input
+        document.getElementById('transcriptInput').value = '';
+        
+        // Reset audio position
+        if (audio_el.src) {
+            audio_el.currentTime = 0;
+        }
+        
+        // Clear session storage
+        sessionStorage.removeItem('vttCreatorData');
+    }
+}
+
         // File upload handlers
         fileUpload.addEventListener('click', () => fileInput.click());
         fileUpload.addEventListener('dragover', (e) => {
@@ -759,6 +828,7 @@ document.addEventListener('keydown', (e) => {
                 updateTimestampsList();
                 updateExportButton();
                 markBtn.disabled = false;
+                markBtn.textContent = 'Mark Timestamp';
                 
                 // Clear transcript input
                 document.getElementById('transcriptInput').value = '';
@@ -862,45 +932,6 @@ document.addEventListener('DOMContentLoaded', function() {
         window.addEventListener('load', () => {
             loadFromSession();
         });
-        
-        function exportVTT() {
-    if (timestamps.length === 0) {
-        alert('No timestamps to export. Please mark some timestamps first.');
-        return;
-    }
-
-    const formatVTTTime = (time) => {
-        const hours = Math.floor(time / 3600);
-        const minutes = Math.floor((time % 3600) / 60);
-        const seconds = time % 60;
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toFixed(3).padStart(6, '0')}`;
-    };
-
-    let vttContent = 'WEBVTT\n\n';
-    
-    timestamps.forEach((timestamp, index) => {
-        const startTime = formatVTTTime(timestamp.start || 0);
-        const endTime = formatVTTTime(timestamp.end || 0);
-        const text = timestamp.text || `Sentence ${index + 1}`;
-        
-        vttContent += `${index + 1}\n`;
-        vttContent += `${startTime} --> ${endTime}\n`;
-        vttContent += `${text}\n\n`;
-    });
-
-    // Create and download file
-    const blob = new Blob([vttContent], { type: 'text/vtt' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'subtitles.vtt';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    console.log('VTT file exported successfully');
-}
     </script>
 </body>
 </html>
