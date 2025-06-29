@@ -652,7 +652,10 @@ document.addEventListener('keydown', (e) => {
         }
 
         function markTimestamp() {
-            if (!audio_el.duration || currentSentenceIndex >= transcriptSentences.length) return;
+            if (!audio_el.duration || currentSentenceIndex >= transcriptSentences.length) {
+                console.log('Cannot mark: no duration or reached end of sentences');
+                return;
+            }
 
             const currentTime = audio_el.currentTime;
 
@@ -663,25 +666,35 @@ document.addEventListener('keydown', (e) => {
                     end: currentTime,
                     text: transcriptSentences[currentSentenceIndex]
                 });
+                currentSentenceIndex++;
             }
-            // Middle sentences
-            else if (currentSentenceIndex < transcriptSentences.length - 1) {
-                timestamps[timestamps.length - 1].end = currentTime;
-                timestamps.push({
-                    start: currentTime,
-                    end: null,
-                    text: transcriptSentences[currentSentenceIndex]
-                });
-            }
-            // Final sentence
-            else {
-                timestamps[timestamps.length - 1].end = audio_el.duration;
-                markBtn.disabled = true;
+            // Middle sentences  
+            else if (currentSentenceIndex < transcriptSentences.length) {
+                // Set the end time of the previous timestamp
+                if (timestamps.length > 0) {
+                    timestamps[timestamps.length - 1].end = currentTime;
+                }
+                
+                // Add new timestamp if we haven't reached the end
+                if (currentSentenceIndex < transcriptSentences.length) {
+                    timestamps.push({
+                        start: currentTime,
+                        end: audio_el.duration, // Default end time
+                        text: transcriptSentences[currentSentenceIndex]
+                    });
+                    currentSentenceIndex++;
+                }
             }
 
-            currentSentenceIndex++;
+            // Check if we've reached the end
+            if (currentSentenceIndex >= transcriptSentences.length) {
+                markBtn.disabled = true;
+                markBtn.textContent = 'All sentences marked!';
+            }
+
             updateTimestampsList();
             updateExportButton();
+            autoSave();
         }
 
        function updateTimestampsList() {
@@ -690,32 +703,32 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
-    const formatTime = (time) => {
+    const formatDisplayTime = (time) => {
         const minutes = Math.floor(time / 60);
         const seconds = Math.floor(time % 60);
         const ms = Math.floor((time % 1) * 1000);
         return `${minutes}:${seconds.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
     };
 
-timestampsList.innerHTML = [...timestamps].reverse().map((timestamp, reverseIndex) => {
+    timestampsList.innerHTML = [...timestamps].reverse().map((timestamp, reverseIndex) => {
         const start = timestamp.start ?? 0;
         const end = timestamp.end ?? 0;
-
-       const index = timestamps.length - 1 - reverseIndex;
-return `
-    <div class="timestamp-item">
-        <div class="timestamp-number">${index + 1}</div>
-        <div class="timestamp-time">${formatTime(start)} → ${formatTime(end)}</div>
-        <input type="text" class="timestamp-text" placeholder="Sentence auto-filled from transcript" 
-               value="${timestamp.text || ''}" readonly>
-        <button class="delete-btn" onclick="deleteTimestamp(${index})">×</button>
-    </div>
-`;
+        const index = timestamps.length - 1 - reverseIndex;
+        
+        return `
+            <div class="timestamp-item">
+                <div class="timestamp-number">${index + 1}</div>
+                <div class="timestamp-time">${formatDisplayTime(start)} → ${formatDisplayTime(end)}</div>
+                <input type="text" class="timestamp-text" placeholder="Sentence auto-filled from transcript" 
+                       value="${timestamp.text || ''}" readonly>
+                <button class="delete-btn" onclick="deleteTimestamp(${index})">×</button>
+            </div>
+        `;
     }).join('');
 
     // Scroll to the last timestamp added
     setTimeout(() => {
-        const lastItem = timestampsList.querySelector('.timestamp-item:last-child');
+        const lastItem = timestampsList.querySelector('.timestamp-item:first-child');
         if (lastItem) {
             lastItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
