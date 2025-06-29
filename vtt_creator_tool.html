@@ -822,6 +822,32 @@ function loadTranscript() {
     console.log('Parsed sentences:', transcriptSentences);
 }
 
+// Add this right after the loadTranscript function (around line 810)
+
+// Add the transcript loading event listener
+loadTranscriptBtn.addEventListener('click', loadTranscript);
+
+// Make sure all functions are properly defined and called
+// Add this at the end of the script section, just before </script>
+
+// Initialize the tool
+document.addEventListener('DOMContentLoaded', function() {
+    // Load any saved session data
+    loadFromSession();
+    
+    // Ensure all elements are properly initialized
+    if (audio_el) {
+        audio_el.addEventListener('loadedmetadata', () => {
+            updateProgress();
+            if (transcriptSentences.length > 0) {
+                markBtn.disabled = false;
+            }
+        });
+    }
+    
+    console.log('VTT Creator Tool initialized successfully');
+});
+
         audio_el.addEventListener('timeupdate', () => {
             if (
                 currentSentenceIndex === transcriptSentences.length &&
