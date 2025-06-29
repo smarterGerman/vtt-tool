@@ -793,7 +793,7 @@ function deleteTimestamp(index) {
     }
 }
 
-// Move the transcript loading logic into a proper function
+// Replace the loadTranscript function
 function loadTranscript() {
     const raw = transcriptInput.value.trim();
     if (!raw) {
@@ -801,19 +801,11 @@ function loadTranscript() {
         return;
     }
 
-    // Improved sentence splitting that handles abbreviations and numbers
+    // Simple line-by-line splitting since sentences are already separated
     transcriptSentences = raw
-        // Split on sentence endings but preserve abbreviations
-        .split(/(?<!\b(?:Dr|Mr|Mrs|Ms|Prof|St|vs|etc|i\.e|e\.g|Jr|Sr|Ph\.D|M\.D|B\.A|M\.A)\.)(?<=\.|\!|\?)\s+|\n{2,}/)
-        .map(s => s.trim())
-        .filter(s => s.length > 0)
-        // Further split very long sentences on semicolons or line breaks
-        .flatMap(sentence => {
-            if (sentence.length > 200) {
-                return sentence.split(/[;\n]+/).map(s => s.trim()).filter(s => s.length > 0);
-            }
-            return [sentence];
-        });
+        .split(/\r?\n/) // Split on line breaks (handles both \n and \r\n)
+        .map(s => s.trim()) // Remove extra whitespace
+        .filter(s => s.length > 0); // Remove empty lines
 
     currentSentenceIndex = 0;
     
@@ -821,13 +813,14 @@ function loadTranscript() {
     timestamps = [];
     updateTimestampsList();
     markBtn.disabled = false;
+    markBtn.textContent = 'Mark Timestamp';
     
     autoSave();
     alert(`Loaded ${transcriptSentences.length} sentences.`);
+    
+    // Debug: log the sentences to console
+    console.log('Parsed sentences:', transcriptSentences);
 }
-
-// Add event listener for load transcript button (move this after DOM elements)
-loadTranscriptBtn.addEventListener('click', loadTranscript);
 
         audio_el.addEventListener('timeupdate', () => {
             if (
