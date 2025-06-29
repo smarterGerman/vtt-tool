@@ -535,22 +535,22 @@
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            // Play/pause with Cmd+Enter (without Shift)
+            // Play/pause with Cmd+Enter
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && audio_el.src && !isTypingInTextField(e.target)) {
                 e.preventDefault();
                 togglePlayback();
                 return;
             }
             
-            // Mark timestamp with Shift+Cmd+M
-            if (e.shiftKey && (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'm' && audio_el.src) {
+            // Mark timestamp with Cmd+M
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'm' && audio_el.src && !isTypingInTextField(e.target)) {
                 e.preventDefault();
                 markTimestamp();
                 return;
             }
 
-            // Undo with Cmd+Z
-            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey && timestamps.length > 0) {
+            // Undo with Cmd+Z (keeping this as it's useful)
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey && timestamps.length > 0 && !isTypingInTextField(e.target)) {
                 e.preventDefault();
                 undoLastTimestamp();
                 return;
@@ -561,18 +561,6 @@
                 e.preventDefault();
                 moveToNextTextField(e.target);
                 return;
-            }
-            
-            // Legacy shortcuts (only if not typing in text field)
-            if (!isTypingInTextField(e.target)) {
-                if (e.code === 'Space' && audio_el.src) {
-                    e.preventDefault();
-                    togglePlayback();
-                }
-                if (e.code === 'KeyM' && audio_el.src) {
-                    e.preventDefault();
-                    markTimestamp();
-                }
             }
         });
 
