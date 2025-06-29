@@ -484,6 +484,8 @@
         const exportBtn = document.getElementById('exportBtn');
         const clearBtn = document.getElementById('clearBtn');
         const speedControl = document.getElementById('speedControl');
+        const transcriptInput = document.getElementById('transcriptInput');
+        const loadTranscriptBtn = document.getElementById('loadTranscriptBtn');
 
         // File upload handlers
         fileUpload.addEventListener('click', () => fileInput.click());
@@ -756,28 +758,61 @@ return `
             }
         }
 
-        document.getElementById('loadTranscriptBtn').addEventListener('click', () => {
-            const raw = document.getElementById('transcriptInput').value.trim();
-            if (!raw) return alert('Please paste a transcript first.');
+        // Add the missing deleteTimestamp function
+function deleteTimestamp(index) {
+    if (index >= 0 && index < timestamps.length) {
+        timestamps.splice(index, 1);
+        
+        // Adjust current sentence index if needed
+        if (index < currentSentenceIndex) {
+            currentSentenceIndex--;
+        }
+        
+        // Re-enable mark button if all timestamps were completed
+        if (currentSentenceIndex < transcriptSentences.length) {
+            markBtn.disabled = false;
+        }
+        
+        updateTimestampsList();
+        updateExportButton();
+    }
+}
 
-            // Improved sentence splitting that handles abbreviations and numbers
-            transcriptSentences = raw
-                // Split on sentence endings but preserve abbreviations
-                .split(/(?<!\b(?:Dr|Mr|Mrs|Ms|Prof|St|vs|etc|i\.e|e\.g|Jr|Sr|Ph\.D|M\.D|B\.A|M\.A)\.)(?<=\.|\!|\?)\s+|\n{2,}/)
-                .map(s => s.trim())
-                .filter(s => s.length > 0)
-                // Further split very long sentences on semicolons or line breaks
-                .flatMap(sentence => {
-                    if (sentence.length > 200) {
-                        return sentence.split(/[;\n]+/).map(s => s.trim()).filter(s => s.length > 0);
-                    }
-                    return [sentence];
-                });
+// Move the transcript loading logic into a proper function
+function loadTranscript() {
+    const raw = transcriptInput.value.trim();
+    if (!raw) {
+        alert('Please paste a transcript first.');
+        return;
+    }
 
-            currentSentenceIndex = 0;
-            autoSave();
-            alert(`Loaded ${transcriptSentences.length} sentences.`);
+    // Improved sentence splitting that handles abbreviations and numbers
+    transcriptSentences = raw
+        // Split on sentence endings but preserve abbreviations
+        .split(/(?<!\b(?:Dr|Mr|Mrs|Ms|Prof|St|vs|etc|i\.e|e\.g|Jr|Sr|Ph\.D|M\.D|B\.A|M\.A)\.)(?<=\.|\!|\?)\s+|\n{2,}/)
+        .map(s => s.trim())
+        .filter(s => s.length > 0)
+        // Further split very long sentences on semicolons or line breaks
+        .flatMap(sentence => {
+            if (sentence.length > 200) {
+                return sentence.split(/[;\n]+/).map(s => s.trim()).filter(s => s.length > 0);
+            }
+            return [sentence];
         });
+
+    currentSentenceIndex = 0;
+    
+    // Reset timestamps when loading new transcript
+    timestamps = [];
+    updateTimestampsList();
+    markBtn.disabled = false;
+    
+    autoSave();
+    alert(`Loaded ${transcriptSentences.length} sentences.`);
+}
+
+// Add event listener for load transcript button (move this after DOM elements)
+loadTranscriptBtn.addEventListener('click', loadTranscript);
 
         audio_el.addEventListener('timeupdate', () => {
             if (
