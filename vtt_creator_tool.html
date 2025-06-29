@@ -349,7 +349,7 @@
 
         <div class="main-content">
             <div class="instructions">
-                <strong>Keyboard shortcuts:</strong> Cmd+Enter (play/pause) • Shift+Cmd+M (mark timestamp) • Enter (next text field) • Cmd+Z (undo last mark) • <strong>How to use:</strong> Upload an audio file → Paste transcript → Load transcript → Play and mark timestamps at sentence boundaries → Export as VTT file
+                <strong>Keyboard shortcuts:</strong> Shift+Cmd+Enter (play/pause) • Shift+Cmd++ (mark timestamp) • Cmd+Z (undo last mark) • <strong>How to use:</strong> Upload an audio file → Paste transcript → Load transcript → Play and mark timestamps at sentence boundaries → Export as VTT file
             </div>
 
             <!-- File Upload -->
@@ -533,58 +533,62 @@
             markBtn.disabled = false;
         });
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            // Play/pause with Cmd+Enter
-            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && audio_el.src && !isTypingInTextField(e.target)) {
-                e.preventDefault();
-                togglePlayback();
-                return;
-            }
-            
-            // Mark timestamp with Cmd+M
-            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'm' && audio_el.src && !isTypingInTextField(e.target)) {
-                e.preventDefault();
-                markTimestamp();
-                return;
-            }
+        // Helper function to check if user is typing (move this BEFORE the event listener)
+function isTypingInTextField(target) {
+    return target && (
+        target.classList.contains('timestamp-text') ||
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA'
+    );
+}
 
-            // Undo with Cmd+Z (keeping this as it's useful)
-            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey && timestamps.length > 0 && !isTypingInTextField(e.target)) {
-                e.preventDefault();
-                undoLastTimestamp();
-                return;
-            }
+function moveToNextTextField(currentField) {
+    const allTextFields = document.querySelectorAll('.timestamp-text');
+    const currentIndex = Array.from(allTextFields).indexOf(currentField);
+    
+    if (currentIndex >= 0 && currentIndex < allTextFields.length - 1) {
+        // Move to next field
+        allTextFields[currentIndex + 1].focus();
+        allTextFields[currentIndex + 1].select();
+    } else if (currentIndex === allTextFields.length - 1) {
+        // If last field, blur to finish editing
+        currentField.blur();
+    }
+}
 
-            // Enter in text field - move to next field
-            if (e.key === 'Enter' && e.target.classList.contains('timestamp-text')) {
-                e.preventDefault();
-                moveToNextTextField(e.target);
-                return;
-            }
-        });
-
-        function isTypingInTextField(target) {
-            return target && (
-                target.classList.contains('timestamp-text') ||
-                target.tagName === 'INPUT' ||
-                target.tagName === 'TEXTAREA'
-            );
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    // Don't trigger shortcuts when typing in text fields
+    if (isTypingInTextField(e.target)) {
+        // Only allow Enter to move to next field when in timestamp text
+        if (e.key === 'Enter' && e.target.classList.contains('timestamp-text')) {
+            e.preventDefault();
+            moveToNextTextField(e.target);
         }
+        return;
+    }
 
-        function moveToNextTextField(currentField) {
-            const allTextFields = document.querySelectorAll('.timestamp-text');
-            const currentIndex = Array.from(allTextFields).indexOf(currentField);
-            
-            if (currentIndex >= 0 && currentIndex < allTextFields.length - 1) {
-                // Move to next field
-                allTextFields[currentIndex + 1].focus();
-                allTextFields[currentIndex + 1].select();
-            } else if (currentIndex === allTextFields.length - 1) {
-                // If last field, blur to finish editing
-                currentField.blur();
-            }
-        }
+    // Play/pause with Shift+Cmd+Enter
+    if (e.shiftKey && (e.metaKey || e.ctrlKey) && e.key === 'Enter' && audio_el.src) {
+        e.preventDefault();
+        togglePlayback();
+        return;
+    }
+    
+    // Mark timestamp with Shift+Cmd++ (plus key)
+    if (e.shiftKey && (e.metaKey || e.ctrlKey) && (e.key === '+' || e.key === '=' || e.code === 'Equal') && audio_el.src && !markBtn.disabled) {
+        e.preventDefault();
+        markTimestamp();
+        return;
+    }
+
+    // Undo with Cmd+Z
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey && timestamps.length > 0) {
+        e.preventDefault();
+        undoLastTimestamp();
+        return;
+    }
+});
 
         function loadAudioFile(file) {
             // Validate file type
