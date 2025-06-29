@@ -349,7 +349,7 @@
 
         <div class="main-content">
             <div class="instructions">
-    <strong>Keyboard shortcuts:</strong> Shift+Cmd+Enter (play/pause) • Cmd++ (mark timestamp) • Cmd+Z (undo last mark) • <strong>How to use:</strong> Upload an audio file → Paste transcript → Load transcript → Play and mark timestamps at sentence boundaries → Export as VTT file
+    <strong>Keyboard shortcuts:</strong> Shift+Cmd+Enter (play/pause) • Shift+Cmd++ (mark timestamp) • Cmd+Z (undo last mark) • <strong>How to use:</strong> Upload an audio file → Paste transcript → Load transcript → Play and mark timestamps at sentence boundaries → Export as VTT file
 </div>
 
             <!-- File Upload -->
@@ -646,8 +646,8 @@ document.addEventListener('keydown', (e) => {
         return;
     }
     
-    // Mark timestamp with Cmd++ (German keyboard friendly)
-    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && 
+    // Mark timestamp with Shift+Cmd++ (prevents browser zoom conflict)
+    if (e.shiftKey && (e.metaKey || e.ctrlKey) && !e.altKey && 
         (e.key === '+' || e.code === 'Equal' || e.code === 'NumpadAdd') && 
         audio_el.src && !markBtn.disabled) {
         e.preventDefault();
